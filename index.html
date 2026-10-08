@@ -1,50 +1,618 @@
-<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#06120b"><title>SYSTEM FAILURE</title><style>
-:root{color-scheme:dark;--g:#8dffaf;--b:#07130d;--mut:#a0bca7}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#12321c,#030805 70%);color:#e7f8eb;font:16px/1.55 system-ui,Arial;min-height:100vh}main{max-width:760px;margin:auto;padding:22px 17px 70px}h1{letter-spacing:.12em;font-size:clamp(26px,7vw,44px);color:var(--g);margin:5px 0}h2{color:var(--g);font-size:21px}h3{margin-bottom:5px}.mut{color:var(--mut)}.panel{border:1px solid #326644;background:#091b11d9;padding:20px;border-radius:13px;margin:15px 0;box-shadow:0 0 20px #0d331444}button,input,textarea{font:inherit;border-radius:8px;padding:12px;color:#ecfff0;background:#0b2414;border:1px solid #477956}button{cursor:pointer}button.primary{background:#216d3c;color:white;border-color:#7affaa;font-weight:700}button:disabled{opacity:.45;cursor:not-allowed}input,textarea{width:100%;margin:8px 0}button{margin:4px 5px 4px 0}.tag{color:#a0ffb9;font:12px monospace;letter-spacing:.13em}.hidden{display:none!important}.timer{font:700 30px monospace;color:var(--g)}.steps{white-space:pre-line;background:#051008;padding:13px;border-left:3px solid var(--g);font-family:monospace}.notice{border-left:3px solid #e5bc6c;padding:10px;background:#31230e}.jigsaw{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:15px 0}.tile{min-height:85px;display:grid;place-items:center;font-size:28px;background:#133921;border:1px dashed #80c990;border-radius:7px}.tile.sel{outline:3px solid #fff}.objects{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.objects button{margin:0}.message{padding:10px;border-left:3px solid #75ffa5;background:#12331b;margin:7px 0}.small{font-size:13px}a{color:#a8ffc1}hr{border:0;border-top:1px solid #2b5536;margin:18px 0}
-</style></head><body><main><div class="tag">ЗАХИЩЕНИЙ КАНАЛ // НЕВІДОМИЙ СПОСТЕРІГАЧ</div><h1>SYSTEM FAILURE</h1><p class="mut">Те, що ти бачиш, — лише частина правди.</p>
-<section id="setup" class="panel"><h2>Підключення</h2><p>Оберіть режим і введіть однаковий код кімнати на обох телефонах.</p><input id="room" placeholder="Код кімнати (наприклад, K7M42)" maxlength="32"><input id="pin" type="password" placeholder="Код оператора (тільки для тебе)"><button class="primary" id="player">Я — гравчиня</button><button id="operator">Я — оператор</button><p class="small mut" id="syncInfo"></p></section>
-<section id="game" class="hidden"><div class="panel"><div class="tag" id="stageLabel"></div><div class="timer" id="timer">60:00</div><h2 id="stageTitle"></h2><div id="story"></div><div id="challenge"></div><div id="answerBox"><input id="answer" placeholder="Введи знайдений код"><button class="primary" id="submitAnswer">Надіслати відповідь</button></div><p class="mut" id="status"></p></div><div class="panel"><h3>Повідомлення спостерігача</h3><div id="messages"></div></div></section>
-<section id="admin" class="hidden"><div class="panel"><div class="tag">ПАНЕЛЬ ОПЕРАТОРА</div><div class="timer" id="adminTimer"></div><p id="adminStage"></p><p id="pending"></p><button class="primary" id="approve">Підтвердити відповідь</button><button id="reject">Відхилити відповідь</button><button id="next">Запустити наступний етап</button><button id="pause">Пауза / продовжити</button><button id="mirror">Активувати MIRROR.exe</button><button id="finish">Завершити гру</button><button id="reset">Скинути гру</button></div><div class="panel"><h3>Надіслати повідомлення</h3><textarea id="msg" rows="3" placeholder="Текст для гравчині"></textarea><button class="primary" id="send">Надіслати</button><h3>Швидкі підказки</h3><div id="hints"></div></div></section><p class="small mut" id="connection"></p></main>
-<script src="config.js"></script><script type="module">
-const $=id=>document.getElementById(id), cfg=window.SF_CONFIG||{}, answers=['СВІДОК','АРХІВ','КОНТРОЛЬ','ВЗУТТЯ','ОЧЕВИДЕЦЬ'], titles=['Перший слід','Пошкоджений файл','Сліпий маршрут','Подвійний слід','Архів спостерігача','Останній протокол'];
+
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#06120b">
+<title>SYSTEM FAILURE</title>
+<style>
+:root{
+  color-scheme:dark;
+  --g:#8dffaf;
+  --b:#07130d;
+  --mut:#a0bca7;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:radial-gradient(ellipse at top,#12321c,#030805 70%);
+  color:#e7f8eb;
+  font:16px/1.55 system-ui,Arial;
+  min-height:100vh;
+}
+main{max-width:760px;margin:auto;padding:22px 17px 70px}
+h1{
+  letter-spacing:.12em;
+  font-size:clamp(26px,7vw,44px);
+  color:var(--g);
+  margin:5px 0;
+}
+h2{color:var(--g);font-size:21px}
+h3{margin-bottom:5px}
+.mut{color:var(--mut)}
+.panel{
+  border:1px solid #326644;
+  background:#091b11d9;
+  padding:20px;
+  border-radius:13px;
+  margin:15px 0;
+  box-shadow:0 0 20px #0d331444;
+}
+button,input,textarea{
+  font:inherit;
+  border-radius:8px;
+  padding:12px;
+  color:#ecfff0;
+  background:#0b2414;
+  border:1px solid #477956;
+}
+button{cursor:pointer;margin:4px 5px 4px 0}
+button.primary{
+  background:#216d3c;
+  color:white;
+  border-color:#7affaa;
+  font-weight:700;
+}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,textarea{width:100%;margin:8px 0}
+.tag{
+  color:#a0ffb9;
+  font:12px monospace;
+  letter-spacing:.13em;
+}
+.hidden{display:none!important}
+.timer{font:700 30px monospace;color:var(--g)}
+.steps{
+  white-space:pre-line;
+  background:#051008;
+  padding:13px;
+  border-left:3px solid var(--g);
+  font-family:monospace;
+}
+.jigsaw{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:3px;
+  margin:15px 0;
+  width:100%;
+  max-width:500px;
+  aspect-ratio:1;
+}
+.tile{
+  position:relative;
+  width:100%;
+  height:100%;
+  min-height:0;
+  padding:0;
+  margin:0;
+  border:1px solid #80c990;
+  border-radius:3px;
+  overflow:hidden;
+  background-color:#133921;
+  display:grid;
+  place-items:center;
+  font-size:28px;
+  touch-action:manipulation;
+}
+.tile.photo{
+  background-image:url("file_0000000000688246a3a7c36a893f0b5d.png");
+  background-size:300% 300%;
+  background-repeat:no-repeat;
+}
+.tile.sel{
+  outline:3px solid #fff;
+  outline-offset:-3px;
+  z-index:2;
+}
+.objects{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:7px;
+}
+.objects button{margin:0}
+.message{
+  padding:10px;
+  border-left:3px solid #75ffa5;
+  background:#12331b;
+  margin:7px 0;
+}
+.small{font-size:13px}
+a{color:#a8ffc1}
+hr{border:0;border-top:1px solid #2b5536;margin:18px 0}
+</style>
+</head>
+<body>
+<main>
+<div class="tag">ЗАХИЩЕНИЙ КАНАЛ // НЕВІДОМИЙ СПОСТЕРІГАЧ</div>
+<h1>SYSTEM FAILURE</h1>
+<p class="mut">Те, що ти бачиш, — лише частина правди.</p>
+
+<section id="setup" class="panel">
+  <h2>Підключення</h2>
+  <p>Оберіть режим і введіть однаковий код кімнати на обох телефонах.</p>
+  <input id="room" placeholder="Код кімнати (наприклад, K7M42)" maxlength="32">
+  <input id="pin" type="password" placeholder="Код оператора (тільки для тебе)">
+  <button class="primary" id="player">Я — гравчиня</button>
+  <button id="operator">Я — оператор</button>
+  <p class="small mut" id="syncInfo"></p>
+</section>
+
+<section id="game" class="hidden">
+  <div class="panel">
+    <div class="tag" id="stageLabel"></div>
+    <div class="timer" id="timer">60:00</div>
+    <h2 id="stageTitle"></h2>
+    <div id="story"></div>
+    <div id="challenge"></div>
+    <div id="answerBox">
+      <input id="answer" placeholder="Введи знайдений код">
+      <button class="primary" id="submitAnswer">Надіслати відповідь</button>
+    </div>
+    <p class="mut" id="status"></p>
+  </div>
+  <div class="panel">
+    <h3>Повідомлення спостерігача</h3>
+    <div id="messages"></div>
+  </div>
+</section>
+
+<section id="admin" class="hidden">
+  <div class="panel">
+    <div class="tag">ПАНЕЛЬ ОПЕРАТОРА</div>
+    <div class="timer" id="adminTimer"></div>
+    <p id="adminStage"></p>
+    <p id="pending"></p>
+    <button class="primary" id="approve">Підтвердити відповідь</button>
+    <button id="reject">Відхилити відповідь</button>
+    <button id="next">Запустити наступний етап</button>
+    <button id="pause">Пауза / продовжити</button>
+    <button id="mirror">Активувати MIRROR.exe</button>
+    <button id="finish">Завершити гру</button>
+    <button id="reset">Скинути гру</button>
+  </div>
+  <div class="panel">
+    <h3>Надіслати повідомлення</h3>
+    <textarea id="msg" rows="3" placeholder="Текст для гравчині"></textarea>
+    <button class="primary" id="send">Надіслати</button>
+    <h3>Швидкі підказки</h3>
+    <div id="hints"></div>
+  </div>
+</section>
+
+<p class="small mut" id="connection"></p>
+</main>
+
+<script src="config.js"></script>
+<script type="module">
+const $=id=>document.getElementById(id);
+const cfg=window.SF_CONFIG||{};
+const titles=[
+  'Перший слід',
+  'Пошкоджений файл',
+  'Сліпий маршрут',
+  'Подвійний слід',
+  'Архів спостерігача',
+  'Останній протокол'
+];
+
 const riddles=[
 `<p>Я приймаю те, що незабаром зникне. Мене наповнюють, хоча я ніколи нічого не прошу. Після кожної зустрічі я знову залишаюся порожньою. Мене бачать майже щодня, але рідко дивляться на мій зворотний бік.</p><p><strong>Де я?</strong></p>`,
 `<p>Файл пошкоджено. Віднови порядок чотирьох предметів. Біля кожного з них прихована літера. Склади слово в порядку відновленого зображення — і знайди наступний доказ.</p>`,
 `<p>Знайди того, хто перемагає темряву, але не бачить власного світла. Стань поруч із ним. Тепер повернись до митей, які вже ніколи не повторяться, але назавжди залишилися з вами. Коли минуле опиниться перед твоїми очима — маршрут можна починати.</p>`,
 `<p>Чотири свідки зберігають фрагменти одного знака. Але один із них бреше. Знайди всі чотири записки, склади з трьох <strong>цілий квадрат</strong> і назви предмет, біля якого був зайвий фрагмент.</p>`,
 `<p>Спостерігач залишив цифровий архів. Шукай історію людини, яка помічає те, чого не бачать інші. Доступ до комп’ютера заблоковано. Щоб відкрити MIRROR.exe, потрібен дозвіл оператора.</p>`,
-`<p>Усі сигнали вели до однієї людини. Спостерігач не був ворогом. Він увесь час був поруч із тобою.</p><p class="tag">РІВЕНЬ ЗАГРОЗИ: 0%</p><p>Знайди його. Подивися йому в очі та вимов уголос пароль:</p><h2>«ТИ ПАЦЮК» 🐀</h2><p>Тільки він може передати останній доказ.</p>`];
+`<p>Усі сигнали вели до однієї людини. Спостерігач не був ворогом. Він увесь час був поруч із тобою.</p><p class="tag">РІВЕНЬ ЗАГРОЗИ: 0%</p><p>Знайди його. Подивися йому в очі та вимов уголос пароль:</p><h2>«ТИ ПАЦЮК» 🐀</h2><p>Тільки він може передати останній доказ.</p>`
+];
+
 const hints=[
-['Ти бачиш це під час їжі.','Шукай на зворотному боці тарілки.'],
-['Потрібно знайти чотири предмети та їхні літери.','Порядок: стілець, ноутбук, чайник, стіл.'],
-['Світло — початок, спогади — напрямок.','Стань біля світильника обличчям до ваших фотографій.'],
-['Не всі чотири фрагменти потрібні.','Три утворюють квадрат, четвертий — зайвий.'],
-['Серіал — «Менталіст».','Дзеркало має 8 панелей. Шукай 2 сезон, 5 серію, 18:16.'],
-['Ти вже знаєш, хто спостерігач.','Скажи пароль йому вголос.']];
-let state={stage:0,approved:false,pending:'',paused:false,remaining:(cfg.gameMinutes||60)*60,updated:Date.now(),messages:[],mirror:false,done:false}, role='', room='',db=null,ref=null,unsub=null,local=true;
+ ['Ти бачиш це під час їжі.','Шукай на зворотному боці тарілки.'],
+ ['Потрібно знайти чотири предмети та їхні літери.','Порядок: стілець, ноутбук, чайник, стіл.'],
+ ['Світло — початок, спогади — напрямок.','Стань біля світильника обличчям до ваших фотографій.'],
+ ['Не всі чотири фрагменти потрібні.','Три утворюють квадрат, четвертий — зайвий.'],
+ ['Серіал — «Менталіст».','Дзеркало має 8 панелей. Шукай 2 сезон, 5 серію, 18:16.'],
+ ['Ти вже знаєш, хто спостерігач.','Скажи пароль йому вголос.']
+];
+
+function initialState(){
+ return {
+  stage:0,
+  approved:false,
+  pending:'',
+  paused:false,
+  remaining:(cfg.gameMinutes||60)*60,
+  updated:Date.now(),
+  messages:[],
+  mirror:false,
+  done:false
+ };
+}
+
+let state=initialState();
+let role='',room='',db=null,ref=null;
+
 const normalize=s=>(s||'').trim().toLocaleUpperCase('uk-UA');
-function getLocal(){try{return JSON.parse(localStorage.getItem('sf_'+room))}catch{return null}}
-function saveLocal(){localStorage.setItem('sf_'+room,JSON.stringify(state));window.dispatchEvent(new Event('sf-change'))}
-async function write(){if(ref)await db.set(ref,state);else saveLocal();render()}
-async function update(changes){state={...state,...changes,updated:Date.now()};await write()}
-function tick(){if(!state.paused&&!state.done){let passed=Math.floor((Date.now()-state.updated)/1000);return Math.max(0,state.remaining-passed)}return state.remaining}
-function time(t){return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`}
-function addMessage(s){return [...(state.messages||[]),{at:Date.now(),text:s}].slice(-25)}
-function puzzle2(){return `<p class="tag">ВІДНОВЛЕННЯ ЗОБРАЖЕННЯ // 9 ФРАГМЕНТІВ</p><p>Натисни два фрагменти, щоб поміняти їх місцями. Порядок читання — зліва направо.</p><div class="jigsaw" id="puzzle"></div><p id="puzzleStatus" class="mut"></p>`}
-function challenge(s){if(s===1)return puzzle2();if(s===2)return `<div class="steps">↑ 2 кроки\n↱ 1 крок\n↰ 1 крок\n↰ 1 крок\n↑ 3 кроки\n↰ 4 кроки\n↱ 1 крок</div><p class="small mut">↱ / ↰ означають: повернись на 90° і пройди вказану кількість кроків уперед. У кінці оглянь правий бік.</p>`;if(s===3)return `<div class="objects">${(cfg.stage4Objects||['Подушка','Рушник','Книга','Взуття']).map((x,i)=>`<button data-odd="${i}">${x}</button>`).join('')}</div>`;if(s===4)return `<div class="panel"><div class="tag">АРХІВ / ДОСТУП ОБМЕЖЕНО</div><p id="mirrorText">${state.mirror?'MIRROR.exe активовано. Склади дзеркальне зображення.':'Очікування дозволу спостерігача…'}</p>${state.mirror?`<div class="jigsaw" id="mirrorPuzzle"></div><p>Скільки окремих частин має ваше справжнє дзеркало? Це пароль до окремого ігрового облікового запису на ПК.</p><hr><p>Ключі до відеоархіву:</p><p>Сезон = кількість людей, що беруть участь у цій грі.</p><p>Серія = кількість пальців на одній руці.</p><p>Час = 18 годин і стільки хвилин, скільки панелей у дзеркалі, помножених на два.</p><p>Відкрий серіал, знайди момент і повтори дію персонажа у своїй квартирі.</p>`:''}</div>`;return ''}
-let tiles2=['🪑','💻','🫖','🪵','🪑','💻','🫖','🪵','🔎'],tilesM=['🪞','👁️','🧍','✨','🪞','👁️','🧍','✨','🪞','👁️','🧍','✨']; // interactive order puzzles
-function initTiles(id,arr){let el=$(id);if(!el)return;let key='sf_tiles_'+room+'_'+id;let order;try{order=JSON.parse(sessionStorage.getItem(key))}catch{}if(!Array.isArray(order)||order.length!==arr.length)order=arr.map((_,i)=>i).reverse();let selected=-1;function paint(){el.innerHTML=order.map((n,i)=>`<button class="tile ${selected===i?'sel':''}" data-i="${i}">${arr[n]}<small>${n+1}</small></button>`).join('');el.querySelectorAll('button').forEach(b=>b.onclick=()=>{let i=+b.dataset.i;if(selected<0)selected=i;else{[order[i],order[selected]]=[order[selected],order[i]];selected=-1;sessionStorage.setItem(key,JSON.stringify(order))}paint()});let stat=$(id==='puzzle'?'puzzleStatus':'mirrorText');if(stat&&order.every((n,i)=>n===i))stat.textContent='Зображення відновлено. Продовжуй пошук у квартирі.'}paint()}
-function render(){if(!role)return;$('timer').textContent=time(tick());$('adminTimer').textContent=time(tick());if(role==='player'){let s=state.stage;$('stageLabel').textContent=`ПРОТОКОЛ 0${s+1} / 06`;$('stageTitle').textContent=state.done?'Систему відновлено':titles[s];$('story').innerHTML=state.done?'<h2>МІСІЮ ЗАВЕРШЕНО ❤️</h2><p>Останній доказ — у твоїх руках.</p>':riddles[s];$('challenge').innerHTML=state.done?'':challenge(s);$('answerBox').classList.toggle('hidden',state.done||s===3||s===5);$('status').textContent=state.done?'':state.approved?'Відповідь прийнято. Очікуй наступного протоколу.':state.pending?'Відповідь надіслано спостерігачу. Очікуй рішення.':'Знайди доказ і надішли відповідь.';$('messages').innerHTML=(state.messages||[]).map(m=>`<div class="message"></div>`).join('');$('messages').querySelectorAll('.message').forEach((el,i)=>el.textContent=state.messages[i].text);if(s===1)initTiles('puzzle',tiles2);if(s===4&&state.mirror)initTiles('mirrorPuzzle',tilesM);$('challenge').querySelectorAll('[data-odd]').forEach(b=>b.onclick=()=>submit((cfg.stage4Objects||['Подушка','Рушник','Книга','Взуття'])[+b.dataset.odd]));}
-else{$('adminStage').textContent=`Етап ${state.stage+1}/6: ${titles[state.stage]} ${state.approved?'✓ Підтверджено':''}`;$('pending').textContent=state.pending?`Відповідь гравчині: ${state.pending}`:'Нових відповідей немає';$('approve').disabled=!state.pending;$('reject').disabled=!state.pending;$('next').disabled=state.stage>=5||!state.approved;$('mirror').disabled=state.stage!==4||state.mirror;$('hints').innerHTML=hints[state.stage].map((h,i)=>`<button data-hint="${i}">Підказка ${i+1}</button>`).join('');$('hints').querySelectorAll('button').forEach(b=>b.onclick=()=>update({messages:addMessage(hints[state.stage][+b.dataset.hint])}));}}
-async function submit(v){if(state.pending||state.approved)return;await update({pending:normalize(v)});$('answer').value=''}
+
+function getLocal(){
+ try{return JSON.parse(localStorage.getItem('sf_'+room))}
+ catch{return null}
+}
+function saveLocal(){
+ localStorage.setItem('sf_'+room,JSON.stringify(state));
+ window.dispatchEvent(new Event('sf-change'));
+}
+async function write(){
+ if(ref)await db.set(ref,state);
+ else saveLocal();
+ render();
+}
+async function update(changes){
+ state={...state,...changes,updated:Date.now()};
+ await write();
+}
+function tick(){
+ if(!state.paused&&!state.done){
+  const passed=Math.floor((Date.now()-state.updated)/1000);
+  return Math.max(0,state.remaining-passed);
+ }
+ return state.remaining;
+}
+function time(t){
+ return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+}
+function addMessage(s){
+ return [...(state.messages||[]),{at:Date.now(),text:s}].slice(-25);
+}
+
+function puzzle2(){
+ return `
+ <p class="tag">ВІДНОВЛЕННЯ ЗОБРАЖЕННЯ // 9 ФРАГМЕНТІВ</p>
+ <p>Натисни два фрагменти, щоб поміняти їх місцями.</p>
+ <div class="jigsaw" id="puzzle"></div>
+ <p id="puzzleStatus" class="mut"></p>`;
+}
+
+function challenge(s){
+ if(s===1)return puzzle2();
+
+ if(s===2)return `
+ <div class="steps">↑ 2 кроки
+↱ 1 крок
+↰ 1 крок
+↰ 1 крок
+↑ 3 кроки
+↰ 4 кроки
+↱ 1 крок</div>
+ <p class="small mut">↱ / ↰ означають: повернись на 90° і пройди вказану кількість кроків уперед. У кінці оглянь правий бік.</p>`;
+
+ if(s===3)return `
+ <div class="objects">
+ ${(cfg.stage4Objects||['Подушка','Рушник','Книга','Взуття'])
+ .map((x,i)=>`<button data-odd="${i}">${x}</button>`).join('')}
+ </div>`;
+
+ if(s===4)return `
+ <div class="panel">
+ <div class="tag">АРХІВ / ДОСТУП ОБМЕЖЕНО</div>
+ <p id="mirrorText">${state.mirror?'MIRROR.exe активовано. Склади дзеркальне зображення.':'Очікування дозволу спостерігача…'}</p>
+ ${state.mirror?`
+ <div class="jigsaw" id="mirrorPuzzle"></div>
+ <p>Скільки окремих частин має ваше справжнє дзеркало? Це пароль до окремого ігрового облікового запису на ПК.</p>
+ <hr>
+ <p>Ключі до відеоархіву:</p>
+ <p>Сезон = кількість людей, що беруть участь у цій грі.</p>
+ <p>Серія = кількість пальців на одній руці.</p>
+ <p>Час = 18 годин і стільки хвилин, скільки панелей у дзеркалі, помножених на два.</p>
+ <p>Відкрий серіал, знайди момент і повтори дію персонажа у своїй квартирі.</p>`:''}
+ </div>`;
+
+ return '';
+}
+
+const tiles2=[0,1,2,3,4,5,6,7,8];
+const tilesM=['🪞','👁️','🧍','✨','🪞','👁️','🧍','✨','🪞','👁️','🧍','✨'];
+
+function initTiles(id,arr){
+ const el=$(id);
+ if(!el)return;
+
+ const key='sf_tiles_'+room+'_'+id;
+ let order;
+ try{order=JSON.parse(sessionStorage.getItem(key))}catch{}
+
+ if(!Array.isArray(order)||order.length!==arr.length){
+  order=arr.map((_,i)=>i).reverse();
+ }
+
+ let selected=-1;
+
+ function paint(){
+  el.innerHTML=order.map((n,i)=>{
+   const content=id==='puzzle'
+    ? ''
+    : arr[n];
+
+   const photoStyle=id==='puzzle'
+    ? `background-position:${(n%3)*50}% ${Math.floor(n/3)*50}%;`
+    : '';
+
+   return `<button
+    type="button"
+    class="tile ${id==='puzzle'?'photo':''} ${selected===i?'sel':''}"
+    style="${photoStyle}"
+    data-i="${i}"
+    aria-label="Фрагмент ${i+1}"
+   >${content}</button>`;
+  }).join('');
+
+  el.querySelectorAll('button').forEach(b=>{
+   b.onclick=()=>{
+    const i=+b.dataset.i;
+
+    if(selected<0){
+     selected=i;
+    }else if(selected===i){
+     selected=-1;
+    }else{
+     [order[i],order[selected]]=[order[selected],order[i]];
+     selected=-1;
+     sessionStorage.setItem(key,JSON.stringify(order));
+    }
+    paint();
+   };
+  });
+
+  const solved=order.every((n,i)=>n===i);
+
+  if(id==='puzzle'){
+   const stat=$('puzzleStatus');
+   if(stat)stat.textContent=solved
+    ? '✓ ЗОБРАЖЕННЯ ВІДНОВЛЕНО. Тепер знайди ці предмети у квартирі.'
+    : 'ПОШКОДЖЕНИЙ ФАЙЛ // Очікування відновлення…';
+  }
+
+  if(id==='mirrorPuzzle'&&solved){
+   const stat=$('mirrorText');
+   if(stat)stat.textContent='✓ MIRROR.exe // Зображення відновлено.';
+  }
+ }
+
+ paint();
+}
+
+function render(){
+ if(!role)return;
+
+ $('timer').textContent=time(tick());
+ $('adminTimer').textContent=time(tick());
+
+ if(role==='player'){
+  const s=state.stage;
+
+  $('stageLabel').textContent=`ПРОТОКОЛ 0${s+1} / 06`;
+  $('stageTitle').textContent=state.done?'Систему відновлено':titles[s];
+
+  $('story').innerHTML=state.done
+   ? '<h2>МІСІЮ ЗАВЕРШЕНО ❤️</h2><p>Останній доказ — у твоїх руках.</p>'
+   : riddles[s];
+
+  const challengeEl=$('challenge');
+
+  // Не перебудовуємо пазл щосекунди,
+  // щоб вибраний фрагмент не скидався.
+  const renderKey=JSON.stringify({
+   stage:s,
+   mirror:state.mirror,
+   done:state.done
+  });
+
+  if(challengeEl.dataset.renderKey!==renderKey){
+   challengeEl.innerHTML=state.done?'':challenge(s);
+   challengeEl.dataset.renderKey=renderKey;
+
+   if(!state.done&&s===1)initTiles('puzzle',tiles2);
+   if(!state.done&&s===4&&state.mirror)initTiles('mirrorPuzzle',tilesM);
+
+   challengeEl.querySelectorAll('[data-odd]').forEach(b=>{
+    b.onclick=()=>submit(
+     (cfg.stage4Objects||['Подушка','Рушник','Книга','Взуття'])[+b.dataset.odd]
+    );
+   });
+  }
+
+  $('answerBox').classList.toggle('hidden',state.done||s===3||s===5);
+
+  $('status').textContent=state.done?''
+   :state.approved?'Відповідь прийнято. Очікуй наступного протоколу.'
+   :state.pending?'Відповідь надіслано спостерігачу. Очікуй рішення.'
+   :'Знайди доказ і надішли відповідь.';
+
+  const messages=state.messages||[];
+  const messageEl=$('messages');
+
+  if(messageEl.dataset.lastMessages!==JSON.stringify(messages)){
+   messageEl.innerHTML='';
+   messages.forEach(m=>{
+    const div=document.createElement('div');
+    div.className='message';
+    div.textContent=m.text;
+    messageEl.appendChild(div);
+   });
+   messageEl.dataset.lastMessages=JSON.stringify(messages);
+  }
+
+ }else{
+  $('adminStage').textContent=
+   `Етап ${state.stage+1}/6: ${titles[state.stage]} ${state.approved?'✓ Підтверджено':''}`;
+
+  $('pending').textContent=state.pending
+   ?`Відповідь гравчині: ${state.pending}`
+   :'Нових відповідей немає';
+
+  $('approve').disabled=!state.pending;
+  $('reject').disabled=!state.pending;
+  $('next').disabled=state.stage>=5||!state.approved;
+  $('mirror').disabled=state.stage!==4||state.mirror;
+
+  const hintEl=$('hints');
+  if(hintEl.dataset.stage!==String(state.stage)){
+   hintEl.innerHTML=hints[state.stage].map((h,i)=>
+    `<button data-hint="${i}">Підказка ${i+1}</button>`
+   ).join('');
+
+   hintEl.querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>update({
+     messages:addMessage(hints[state.stage][+b.dataset.hint])
+    });
+   });
+
+   hintEl.dataset.stage=String(state.stage);
+  }
+ }
+}
+
+async function submit(v){
+ if(state.pending||state.approved)return;
+ const answer=normalize(v);
+ if(!answer)return;
+ await update({pending:answer});
+ $('answer').value='';
+}
+
 $('submitAnswer').onclick=()=>submit($('answer').value);
-$('approve').onclick=()=>update({approved:true,pending:'',messages:addMessage('Доказ підтверджено. Протокол розблоковано.')});
-$('reject').onclick=()=>update({pending:'',messages:addMessage('Доказ не підтверджено. Перевір уважніше.')});
-$('next').onclick=()=>update({stage:state.stage+1,approved:false,pending:'',remaining:tick()});
-$('pause').onclick=()=>update({remaining:tick(),paused:!state.paused});
-$('mirror').onclick=()=>update({mirror:true,messages:addMessage('MIRROR.exe активовано. Знайди те, що дивиться на тебе у відповідь.')});
-$('finish').onclick=()=>{if(confirm('Завершити гру?'))update({done:true,remaining:tick()})};
-$('reset').onclick=()=>{if(confirm('Скинути весь прогрес?')){state={stage:0,approved:false,pending:'',paused:false,remaining:(cfg.gameMinutes||60)*60,updated:Date.now(),messages:[],mirror:false,done:false};write()}};
-$('send').onclick=()=>{let t=$('msg').value.trim();if(t){update({messages:addMessage(t)});$('msg').value=''}};
-async function enter(r){role=r;room=$('room').value.trim().toUpperCase();if(!room){alert('Введи код кімнати');return}if(r==='operator'){let pin=$('pin').value;if(!pin){alert('Введи код оператора');return}sessionStorage.setItem('sf_operator_pin',pin)}$('setup').classList.add('hidden');$(r==='player'?'game':'admin').classList.remove('hidden');if(cfg.firebase){try{let a=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),d=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js'),au=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');let app=a.initializeApp(cfg.firebase),auth=au.getAuth(app);await au.signInAnonymously(auth);db=d;ref=d.ref(d.getDatabase(app),'rooms/'+room);let first=await d.get(ref);if(!first.exists()&&r==='operator')await d.set(ref,state);d.onValue(ref,s=>{if(s.exists())state=s.val();render()});$('connection').textContent='Підключено до спільної кімнати.';local=false}catch(e){$('connection').textContent='Помилка хмарного підключення: '+e.message;console.error(e)}}else{$('connection').textContent='Демонстраційний режим: синхронізація лише на цьому пристрої. Для двох телефонів потрібен Firebase.';state=getLocal()||state;window.addEventListener('storage',e=>{if(e.key==='sf_'+room){state=getLocal()||state;render()}});window.addEventListener('sf-change',()=>{state=getLocal()||state;render()})}render()}
-$('player').onclick=()=>enter('player');$('operator').onclick=()=>enter('operator');$('syncInfo').textContent=cfg.firebase?'Хмарна синхронізація налаштована.':'Хмарна синхронізація ще не налаштована.';setInterval(render,1000);
-</script></body></html>
+
+$('approve').onclick=()=>update({
+ approved:true,
+ pending:'',
+ messages:addMessage('Доказ підтверджено. Протокол розблоковано.')
+});
+
+$('reject').onclick=()=>update({
+ pending:'',
+ messages:addMessage('Доказ не підтверджено. Перевір уважніше.')
+});
+
+$('next').onclick=()=>update({
+ stage:state.stage+1,
+ approved:false,
+ pending:'',
+ remaining:tick()
+});
+
+$('pause').onclick=()=>update({
+ remaining:tick(),
+ paused:!state.paused
+});
+
+$('mirror').onclick=()=>update({
+ mirror:true,
+ messages:addMessage('MIRROR.exe активовано. Знайди те, що дивиться на тебе у відповідь.')
+});
+
+$('finish').onclick=()=>{
+ if(confirm('Завершити гру?')){
+  update({done:true,remaining:tick()});
+ }
+};
+
+$('reset').onclick=()=>{
+ if(confirm('Скинути весь прогрес?')){
+  state=initialState();
+  write();
+ }
+};
+
+$('send').onclick=()=>{
+ const t=$('msg').value.trim();
+ if(t){
+  update({messages:addMessage(t)});
+  $('msg').value='';
+ }
+};
+
+async function enter(r){
+ role=r;
+ room=$('room').value.trim().toUpperCase();
+
+ if(!room){
+  alert('Введи код кімнати');
+  return;
+ }
+
+ if(r==='operator'){
+  const pin=$('pin').value;
+  if(!pin){
+   alert('Введи код оператора');
+   return;
+  }
+  sessionStorage.setItem('sf_operator_pin',pin);
+ }
+
+ $('setup').classList.add('hidden');
+ $(r==='player'?'game':'admin').classList.remove('hidden');
+
+ if(cfg.firebase){
+  try{
+   const a=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
+   const d=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js');
+   const au=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js');
+
+   const app=a.initializeApp(cfg.firebase);
+   const auth=au.getAuth(app);
+
+   await au.signInAnonymously(auth);
+
+   db=d;
+   ref=d.ref(d.getDatabase(app),'rooms/'+room);
+
+   const first=await d.get(ref);
+
+   if(!first.exists()&&r==='operator'){
+    await d.set(ref,state);
+   }
+
+   d.onValue(ref,s=>{
+    if(s.exists()){
+     state=s.val();
+     render();
+    }
+   });
+
+   $('connection').textContent='Підключено до спільної кімнати.';
+  }catch(e){
+   $('connection').textContent='Помилка хмарного підключення: '+e.message;
+   console.error(e);
+  }
+ }else{
+  $('connection').textContent=
+   'Демонстраційний режим: синхронізація лише на цьому пристрої.';
+
+  state=getLocal()||state;
+
+  window.addEventListener('storage',e=>{
+   if(e.key==='sf_'+room){
+    state=getLocal()||state;
+    render();
+   }
+  });
+
+  window.addEventListener('sf-change',()=>{
+   state=getLocal()||state;
+   render();
+  });
+ }
+
+ render();
+}
+
+$('player').onclick=()=>enter('player');
+$('operator').onclick=()=>enter('operator');
+
+$('syncInfo').textContent=cfg.firebase
+ ?'Хмарна синхронізація налаштована.'
+ :'Хмарна синхронізація ще не налаштована.';
+
+setInterval(render,1000);
+</script>
+</body>
+</html>
